@@ -1,0 +1,36 @@
+{
+  "name": "typescript-webpack-starter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "karma start ./karma.conf.js --browsers PhantomJS",
+    "test:chrome": "karma start ./karma.conf.js --browsers Chrome",
+    "webpack": "webpack -w",
+    "build": "webpack --disable-bs"
+  },
+  "author": "Vlad",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jasmine": "latest",
+    "browser-sync": "latest",
+    "browser-sync-webpack-plugin": "latest",
+    "jasmine": "latest",
+    "karma": "latest",
+    "karma-chrome-launcher": "latest",
+    "karma-firefox-launcher": "latest",
+    "karma-jasmine": "latest",
+    "karma-phantomjs-launcher": "latest",
+    "karma-webpack": "latest",
+    "phantomjs-prebuilt": "latest",
+    "typescript": "latest",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.1",
+    "awesome-typescript-loader": "latest",
+    "progress-bar-webpack-plugin": "latest",
+    "html-webpack-plugin": "latest"
+  },
+  "dependencies": {
+    "rxjs": "^6.3.3"
+  }
+}
