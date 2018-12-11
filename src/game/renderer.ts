@@ -8,4 +8,13 @@ export class Renderer {
         context.stroke();
         context.fill();
     }
+
+    public static drawLine(p1: Vector, p2: Vector, color: string, context: CanvasRenderingContext2D) {
+        context.beginPath();
+        context.strokeStyle = `#${color}`;
+        context.moveTo(p1.x, p1.y);
+        context.lineTo(p2.x, p2.y);
+        context.stroke();
+        context.fill();
+    }
 }
