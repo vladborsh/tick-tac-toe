@@ -34,7 +34,7 @@ export class Game {
         document.body.appendChild(this.canvas);
         this.clear();
         this.objects.push({
-            render: (ctx) => Renderer.drawPoint({x:50, y:50}, 4, 'ffffff', ctx);
+            render: (ctx) => Renderer.drawPoint(ctx, {x:50, y:50}, 4, 'ffffff'),
             update: () => null,
         })
     }
