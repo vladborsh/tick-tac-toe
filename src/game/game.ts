@@ -17,7 +17,6 @@ export class Game {
     private winnerDefined = false;
     private objects: EntityAbstract[] = [];
 
-    
     constructor() {
         this.init();
         this.initLoop(Loop.getMainStream$(this.gameState$));
@@ -27,10 +26,11 @@ export class Game {
         this.canvas = document.createElement('canvas');
         this.canvas.width = Game.CANVAS_WIDTH;
         this.canvas.height = Game.CANVAS_HEIGHT;
-        this.canvas.style.margin = '100px auto';
         this.canvas.style.display = 'block';
         this.canvas.style['box-shadow'] = '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 10px 25px 0 rgba(0, 0, 0, 0.19)';
         document.body.style.background = 'rgb(36, 61, 80)';
+        document.body.style.padding = '0';
+        document.body.style.margin = '0';
         this.context = this.canvas.getContext('2d');
         document.body.appendChild(this.canvas);
         this.clear();
@@ -78,14 +78,13 @@ export class Game {
         
         if (click && !this.winnerDefined) {
             const foundArea = this.sensitiveAreas
-                .find((area) => 
-                    dx+area.x < click.x 
+                .find((area) => dx+area.x < click.x 
                     && dx+area.xe > click.x 
                     && dy+area.y < click.y 
                     && dy+area.ye > click.y
                 );
             
-                foundArea.trigger(foundArea.link);
+                foundArea && foundArea.trigger(foundArea.link);
             
             this.winnerDefined = this.isWinner(this.board);
     
@@ -93,7 +92,6 @@ export class Game {
                 this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
             }
         }
-        
 
         return {};
     }
@@ -141,7 +139,7 @@ export class Game {
 
         this.objects.push(cell);
 
-        this.sensitiveAreas.push(this.addSensitiveArea(cellSize, xCellAutoArr, xCellAutoArr, xC, yC, cell));
+        this.sensitiveAreas.push(this.addSensitiveArea(cellSize, xCellAutoArr, yCellAutoArr, xC, yC, cell));
     }
 
     private addSensitiveArea(
@@ -222,9 +220,9 @@ export class Game {
         ];
     }
 
-    private static readonly CANVAS_WIDTH = 500;
+    private static readonly CANVAS_WIDTH = document.documentElement.clientWidth;
 
-    private static readonly CANVAS_HEIGHT = 500;
+    private static readonly CANVAS_HEIGHT = document.documentElement.clientHeight;
 
     private static readonly CANVAS_CENTER_X = Game.CANVAS_WIDTH / 2;
 
