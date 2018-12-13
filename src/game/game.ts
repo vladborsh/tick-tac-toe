@@ -74,7 +74,6 @@ export class Game {
 
     private render(): void {
         this.clear();
-        console.log('-----')
         this.objects.forEach((object: EntityAbstract) => object.render(this.context));
     }
 
@@ -101,7 +100,7 @@ export class Game {
                 {x: cellSize, y: cellSize}, 
                 cellColor,
             ),
-            update: () => null,
+            update: _ => null,
         };
 
         this.objects.push(cell);
@@ -112,13 +111,16 @@ export class Game {
             xe: xCellAutoArr[Math.floor(i%3)]+cellSize/2,
             ye: yCellAutoArr[Math.floor(i/3)]+cellSize/2,
             link: cell,
-            trigger: (link) =>  
-                link.render = (ctx: CanvasRenderingContext2D) => Renderer.drawRect(
-                    ctx, 
-                    {x: xCellAutoArr[Math.floor(i%3)], y: yCellAutoArr[Math.floor(i/3)]}, 
-                    {x: cellSize, y: cellSize}, 
-                    '3bb5e5',
-                )
+            trigger: () =>  
+                this.objects.push({
+                    render: (ctx: CanvasRenderingContext2D) => Renderer.drawRect(
+                        ctx, 
+                        {x: xCellAutoArr[Math.floor(i%3)], y: yCellAutoArr[Math.floor(i/3)]}, 
+                        {x: cellSize, y: cellSize}, 
+                        '3bb5e5',
+                    ),
+                    update: _ => null,
+                })
         })
     }
 }

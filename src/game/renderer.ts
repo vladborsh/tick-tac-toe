@@ -20,7 +20,6 @@ export class Renderer {
 
     public static drawRect(context: CanvasRenderingContext2D, center: Vector, size: Vector, color: string): void {
         context.fillStyle = `#${color}`;
-        context.rect(center.x-size.x/2, center.y-size.x/2, size.x, size.y);
-        context.fill();
+        context.fillRect(center.x-size.x/2, center.y-size.x/2, size.x, size.y);
     }
 }
