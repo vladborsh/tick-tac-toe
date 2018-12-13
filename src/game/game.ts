@@ -1,4 +1,4 @@
-import { map, tap } from 'rxjs/operators';
+import { map, tap, reduce } from 'rxjs/operators';
 import { Observable, of, fromEvent, BehaviorSubject } from 'rxjs';
 import { Loop } from './loop';
 import { Renderer } from './renderer';
@@ -14,7 +14,9 @@ export class Game {
     private sensitiveAreas = [];
     private board: CellType[][] = Game.INITIAL_BOARD_STATE;
     private currentTurn: CellType = CellType.TAC;
+    private winnerDefined = false;
     private objects: EntityAbstract[] = [];
+
     
     constructor() {
         this.init();
@@ -74,19 +76,24 @@ export class Game {
         const dx = this.canvas.offsetLeft;
         const dy = this.canvas.offsetTop;
         
-        if (click) {
-            this.sensitiveAreas
-                .filter((area) => 
+        if (click && !this.winnerDefined) {
+            const foundArea = this.sensitiveAreas
+                .find((area) => 
                     dx+area.x < click.x 
                     && dx+area.xe > click.x 
                     && dy+area.y < click.y 
                     && dy+area.ye > click.y
-                )
-                .forEach(({trigger, link}) => {
-                    trigger(link);
-                    this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
-                });
+                );
+            
+                foundArea.trigger(foundArea.link);
+            
+            this.winnerDefined = this.isWinner(this.board);
+    
+            if (!this.winnerDefined) {
+                this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
+            }
         }
+        
 
         return {};
     }
@@ -187,6 +194,24 @@ export class Game {
             ),
             update: _ => null,
         })
+    }
+
+    private isWinner(board: CellType[][]): boolean {
+        let isWinner = false;
+
+        repeat(3, (i: number) => {
+            const sumRow = board[i].reduce((acc, curr: number) => acc += curr, 0);
+            const sumColl = board.reduce((acc, curr: number[]) => acc += curr[i], 0);
+
+            isWinner = sumRow === -3 || sumRow === 3 || sumColl === 3 || sumColl === -3;
+        })
+
+        isWinner = (board[0][0] + board[1][1] + board[2][2] === 3)
+            || (board[0][0] + board[1][1] + board[2][2] === -3) 
+            || (board[0][2] + board[1][1] + board[2][0] === 3)
+            || (board[0][2] + board[1][1] + board[2][0] === -3);
+
+        return isWinner;
     }
 
     private static get INITIAL_BOARD_STATE(): CellType[][] {

@@ -1,4 +1,4 @@
 export enum CellType {
-    TICK,
-    TAC,
+    TICK = 1,
+    TAC = -1,
 }
