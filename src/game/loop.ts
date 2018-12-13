@@ -11,11 +11,12 @@ export class Loop {
      */
     public static getMainStream$(
         gameState$: BehaviorSubject<Record<string,string>>
-    ): Observable<[number, Record<string,string>, Record<string,string>]> {
+    ): Observable<[number, Record<string,string>, Record<string, number>, Record<string,string>]> {
         return this.frames$()
             .pipe(
                 withLatestFrom(
                     this.keysDownPerFrame$(),
+                    this.mouseClickPerFrame$(),
                     gameState$,
                 ),
             );
@@ -31,8 +32,26 @@ export class Loop {
             .pipe(
                 buffer(this.frames$()),
                 map((frames: Array<any>) => 
-                    frames.reduce((acc, curr) => Object.assign(acc, curr), {}),
-                )
+                    frames.reduce((acc, curr) => ({ ...acc, curr }), []),
+                ),
+            );
+    }
+
+    private static mouseClickPerFrame$(): Observable<Record<string, number>> {
+        return fromEvent(document, 'click')
+            .pipe(
+                filter((event) => !!event),
+                buffer(this.frames$()),
+                map((frames: Array<Event>) => {
+                    if (!frames.length) return undefined;
+                    
+                    const { clientX, clientY } = frames.pop() as MouseEvent;
+
+                    return {
+                        x: clientX,
+                        y: clientY,
+                    };
+                }),
             );
     }
 
@@ -90,8 +109,7 @@ export class Loop {
         return of(undefined)
             .pipe(
                 expand((val) => this.calculateStep(val)),
-                // Expand emits the first value provided to it, and in this
-                //  case we just want to ignore the undefined input frame
+                // Expand emits the first value provided to it, we just want to ignore the undefined input frame
                 filter(frame => frame !== undefined),
                 map((frame: IFrameData) => frame.deltaTime),
                 share()

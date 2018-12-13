@@ -13,6 +13,7 @@ export class Game {
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
     private gameState$ = new BehaviorSubject({});
+    private sensitiveAreas = [];
 
     private objects: EntityAbstract[] = [];
     
@@ -35,24 +36,45 @@ export class Game {
         this.addBoard();
     }
 
-    private initLoop(mainStream$: Observable<[number, Record<string,string>, Record<string,string>]>) {
+    private initLoop(mainStream$: Observable<[number, Record<string,string>, Record<string, number>, Record<string,string>]>) {
         mainStream$
             .pipe(
-                map(([deltaTime, keysDown, gameState]: [number, Record<string, string>, Record<string, string>]) => 
-                    this.update(deltaTime, gameState, keysDown)
+                map(([deltaTime, keysDown, click, gameState]: [number, Record<string,string>, Record<string, number>, Record<string,string>]) => 
+                    this.update(deltaTime, gameState, keysDown, click)
                 ),
                 tap((gameState) => this.gameState$.next(gameState))
             )
             .subscribe(() => this.render()); 
     }
 
-    private update(deltaTime: number, keysDown: Record<string, string>, gameState: Record<string, string>): Record<string, string> {
+    private update(
+        deltaTime: number,
+        keysDown: Record<string, string>,
+        gameState: Record<string, string>,
+        click: Record<string, number>
+    ): Record<string, string> {
         this.objects.forEach((object: EntityAbstract) => object.update(deltaTime, keysDown, gameState));
+
+        const dx = this.canvas.offsetLeft;
+        const dy = this.canvas.offsetTop;
+        
+        if (click) {
+            this.sensitiveAreas
+                .filter((area) => 
+                    dx+area.x < click.x 
+                    && dx+area.xe > click.x 
+                    && dy+area.y < click.y 
+                    && dy+area.ye > click.y
+                )
+                .forEach(({trigger, link}) => trigger(link));
+        }
+
         return {};
     }
 
     private render(): void {
         this.clear();
+        console.log('-----')
         this.objects.forEach((object: EntityAbstract) => object.render(this.context));
     }
 
@@ -61,23 +83,42 @@ export class Game {
     }
 
     private addBoard(): void {
-        const FIELD_SQUARE_SIZE = 50;
+        const CELL_SIZE = 50;
         const PADDING = 10;
-        const CELL_COLOR = '4078a0'
+        const CELL_COLOR = '4078a0';
 
         const cellsAuto = (o, s, p) => [o-p-s, o, o+p+s]
-        const [xCellAutoArr, yCellAutoArr] = [Game.CANVAS_CENTER_X, Game.CANVAS_CENTER_Y].map(o => cellsAuto(o, FIELD_SQUARE_SIZE, PADDING));
+        const [xCellAutoArr, yCellAutoArr] = [Game.CANVAS_CENTER_X, Game.CANVAS_CENTER_Y].map(o => cellsAuto(o, CELL_SIZE, PADDING));
 
-        repeat(9, (i) =>
-            this.objects.push({
-                render: (ctx) => Renderer.drawRect(
+        repeat(9, (i: number) => this.addCell(i, CELL_SIZE, CELL_COLOR, xCellAutoArr, yCellAutoArr));
+    }
+
+    private addCell(i: number, cellSize: number, cellColor: string, xCellAutoArr: number[], yCellAutoArr: number[]): void {
+        const cell = {
+            render: (ctx: CanvasRenderingContext2D) => Renderer.drawRect(
+                ctx, 
+                {x: xCellAutoArr[Math.floor(i%3)], y: yCellAutoArr[Math.floor(i/3)]}, 
+                {x: cellSize, y: cellSize}, 
+                cellColor,
+            ),
+            update: () => null,
+        };
+
+        this.objects.push(cell);
+
+        this.sensitiveAreas.push({
+            x: xCellAutoArr[Math.floor(i%3)]-cellSize/2,
+            y: yCellAutoArr[Math.floor(i/3)]-cellSize/2,
+            xe: xCellAutoArr[Math.floor(i%3)]+cellSize/2,
+            ye: yCellAutoArr[Math.floor(i/3)]+cellSize/2,
+            link: cell,
+            trigger: (link) =>  
+                link.render = (ctx: CanvasRenderingContext2D) => Renderer.drawRect(
                     ctx, 
                     {x: xCellAutoArr[Math.floor(i%3)], y: yCellAutoArr[Math.floor(i/3)]}, 
-                    {x: FIELD_SQUARE_SIZE, y: FIELD_SQUARE_SIZE}, 
-                    CELL_COLOR
-                ),
-                update: () => null,
-            }),
-        );
+                    {x: cellSize, y: cellSize}, 
+                    '3bb5e5',
+                )
+        })
     }
 }
