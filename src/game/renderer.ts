@@ -33,13 +33,13 @@ export class Renderer {
     public static drawTick(context: CanvasRenderingContext2D, position: Vector, size: number, color: string): void {
         context.beginPath();
         context.strokeStyle = `#${color}`;
-        context.moveTo(position.x - size, position.y - size);
-        context.lineTo(position.x + size, position.y + size);
+        context.moveTo(position.x - size/2, position.y - size/2);
+        context.lineTo(position.x + size/2, position.y + size/2);
         context.stroke();
         context.beginPath();
         context.strokeStyle = `#${color}`;
-        context.moveTo(position.x - size, position.y + size);
-        context.lineTo(position.x + size, position.y - size);
+        context.moveTo(position.x - size/2, position.y + size/2);
+        context.lineTo(position.x + size/2, position.y - size/2);
         context.stroke();
     }
 }

@@ -182,7 +182,7 @@ export class Game {
             render: (ctx: CanvasRenderingContext2D) => Renderer.drawTick(
                 ctx,
                 position, 
-                cellSize-60,
+                cellSize-30,
                 Game.TICK_COLOR,
             ),
             update: _ => null,
