@@ -204,21 +204,20 @@ export class Game {
     }
 
     private isWinner(board: CellType[][]): boolean {
-        let isWinner = false;
-
-        repeat(3, (i: number) => {
+        for (let i = 0; i < 3; i++) {
             const sumRow = board[i].reduce((acc, curr: number) => acc += curr, 0);
             const sumColl = board.reduce((acc, curr: number[]) => acc += curr[i], 0);
+            const isWinner = sumRow === -3 || sumRow === 3 || sumColl === 3 || sumColl === -3;
 
-            isWinner = sumRow === -3 || sumRow === 3 || sumColl === 3 || sumColl === -3;
-        })
+            if (isWinner) {
+                return true;
+            }
+        }
 
-        isWinner = (board[0][0] + board[1][1] + board[2][2] === 3)
+        return (board[0][0] + board[1][1] + board[2][2] === 3)
             || (board[0][0] + board[1][1] + board[2][2] === -3) 
             || (board[0][2] + board[1][1] + board[2][0] === 3)
             || (board[0][2] + board[1][1] + board[2][0] === -3);
-
-        return isWinner;
     }
 
     private static get INITIAL_BOARD_STATE(): CellType[][] {
