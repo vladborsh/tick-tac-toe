@@ -16,6 +16,7 @@ export class Game {
     private currentTurn: CellType = CellType.TAC;
     private winnerDefined = false;
     private objects: EntityAbstract[] = [];
+    private shaker: Shaker = new Shaker();
 
     constructor() {
         this.init();
@@ -84,7 +85,10 @@ export class Game {
                     && dy+area.ye > click.y
                 );
             
-                foundArea && foundArea.trigger(foundArea.link);
+            if (foundArea) {
+                this.shaker.activate();
+                foundArea.trigger(foundArea.link);
+            }
             
             this.winnerDefined = this.isWinner(this.board);
     
@@ -98,6 +102,11 @@ export class Game {
 
     private render(): void {
         this.clear();
+
+        if(this.shaker.isActive()) {
+            this.shaker.shake(this.context);
+        }
+
         this.objects.forEach((object: EntityAbstract) => object.render(this.context));
     }
 
@@ -237,4 +246,45 @@ export class Game {
     private static readonly TICK_COLOR = '6dcea4';
 
     private static readonly TAC_COLOR = 'b19fea';
+}
+
+class Shaker {
+
+    private active = false;
+    private currentTurn = 0;
+    private topDirection: boolean;
+    private iterator: number;
+
+    public isActive(): boolean {
+        return this.active;
+    }
+    
+    public shake(context: CanvasRenderingContext2D): void {
+        if (this.iterator == 2) {
+            this.currentTurn--;
+            this.iterator = 0;
+        } 
+
+        context.translate(0, (this.topDirection ? -1 : 1) * this.currentTurn);
+        this.topDirection = !this.topDirection;
+        
+        this.iterator++;
+
+        if (this.currentTurn == 0) {
+            this.stop();
+        }
+    }
+    
+    public activate(): void {
+        this.active = true;
+        this.topDirection = false;
+        this.currentTurn = Shaker.DEFAULT_TURN_NUMBER;
+        this.iterator = 0;
+    }
+
+    public stop(): void {
+        this.active = false;
+    }
+
+    private static DEFAULT_TURN_NUMBER = 4;
 }
