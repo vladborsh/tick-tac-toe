@@ -1,4 +1,4 @@
-import { map, tap, filter } from 'rxjs/operators';
+import { map, tap, filter, distinctUntilChanged } from 'rxjs/operators';
 import { Observable, of, fromEvent, BehaviorSubject, Subject } from 'rxjs';
 import { Loop } from './loop';
 import { Renderer } from './renderer';
@@ -32,8 +32,6 @@ export class Game {
         this.canvas = document.createElement('canvas');
         this.canvas.width = Game.CANVAS_WIDTH;
         this.canvas.height = Game.CANVAS_HEIGHT;
-        this.canvas.style.display = 'block';
-        this.canvas.style['box-shadow'] = '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 10px 25px 0 rgba(0, 0, 0, 0.19)';
         document.body.style.background = 'rgb(36, 61, 80)';
         document.body.style.padding = '0';
         document.body.style.margin = '0';
@@ -73,6 +71,8 @@ export class Game {
         this.gameState$
             .pipe(
                 filter(state => !!state.winner),
+                map(state => state.winner),
+                distinctUntilChanged(),
                 tap(() => alertIt('We have a winner')),
             ).subscribe();
     }
@@ -94,6 +94,7 @@ export class Game {
                     && dx+area.xe > click.x 
                     && dy+area.y < click.y 
                     && dy+area.ye > click.y
+                    && !this.board[area.xC][area.yC]
                 );
             
             if (foundArea && !this.winnerDefined) {
@@ -105,7 +106,9 @@ export class Game {
             this.winnerDefined = this.isWinner(this.board);
         }
 
-        return { winner: this.winnerDefined ? this.currentTurn : undefined };
+        return !!gameState.winner 
+            ? { winner: undefined }
+            : { winner: this.winnerDefined ? this.currentTurn : undefined };
     }
 
     private render(): void {
@@ -168,6 +171,8 @@ export class Game {
         cell: EntityAbstract
     ) {
         return {
+            xC,
+            yC,
             x: xCellAutoArr[xC]-cellSize/2,
             y: yCellAutoArr[yC]-cellSize/2,
             xe: xCellAutoArr[xC]+cellSize/2,
