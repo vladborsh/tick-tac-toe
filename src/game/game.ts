@@ -1,16 +1,17 @@
-import { map, tap, reduce } from 'rxjs/operators';
-import { Observable, of, fromEvent, BehaviorSubject } from 'rxjs';
+import { map, tap, filter } from 'rxjs/operators';
+import { Observable, of, fromEvent, BehaviorSubject, Subject } from 'rxjs';
 import { Loop } from './loop';
 import { Renderer } from './renderer';
 import { EntityAbstract } from './types/entity.abstract';
 import { repeat } from './util';
 import { Vector } from './types/vector.interface';
 import { CellType } from './types/cell-type.enum';
+import { alertIt } from './ui.util';
 
 export class Game {
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
-    private gameState$ = new BehaviorSubject({});
+    private gameState$: BehaviorSubject<Record<string,any>> = new BehaviorSubject({});
     private sensitiveAreas = [];
     private board: CellType[][] = Game.INITIAL_BOARD_STATE;
     private currentTurn: CellType = CellType.TAC;
@@ -21,6 +22,10 @@ export class Game {
     constructor() {
         this.init();
         this.initLoop(Loop.getMainStream$(this.gameState$));
+    }
+
+    public get state$(): Observable<Record<string,any>> {
+        return this.gameState$.asObservable();
     }
 
     private init(): void {
@@ -43,7 +48,7 @@ export class Game {
             number,
             Record<string,string>,
             Record<string,number>,
-            Record<string,string>
+            Record<string,any>
         ]>
     ) {
         mainStream$
@@ -58,20 +63,26 @@ export class Game {
                         number,
                         Record<string,string>,
                         Record<string, number>,
-                        Record<string,string>
+                        Record<string,any>
                     ]) => this.update(deltaTime, gameState, keysDown, click)
                 ),
                 tap((gameState) => this.gameState$.next(gameState))
             )
-            .subscribe(() => this.render()); 
+            .subscribe(() => this.render());
+            
+        this.gameState$
+            .pipe(
+                filter(state => !!state.winner),
+                tap(() => alertIt('We have a winner')),
+            ).subscribe();
     }
 
     private update(
         deltaTime: number,
         keysDown: Record<string, string>,
-        gameState: Record<string, string>,
+        gameState: Record<string,any>,
         click: Record<string, number>
-    ): Record<string, string> {
+    ): Record<string,any> {
         this.objects.forEach((object: EntityAbstract) => object.update(deltaTime, keysDown, gameState));
 
         const dx = this.canvas.offsetLeft;
@@ -85,19 +96,16 @@ export class Game {
                     && dy+area.ye > click.y
                 );
             
-            if (foundArea) {
+            if (foundArea && !this.winnerDefined) {
                 this.shaker.activate();
                 foundArea.trigger(foundArea.link);
+                this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
             }
             
             this.winnerDefined = this.isWinner(this.board);
-    
-            if (!this.winnerDefined) {
-                this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
-            }
         }
 
-        return {};
+        return { winner: this.winnerDefined ? this.currentTurn : undefined };
     }
 
     private render(): void {
@@ -248,7 +256,6 @@ export class Game {
 }
 
 class Shaker {
-
     private active = false;
     private currentTurn = 0;
     private topDirection: boolean;
