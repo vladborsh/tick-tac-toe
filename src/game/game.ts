@@ -11,9 +11,11 @@ import { alertIt } from './ui.util';
 export class Game {
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
-    private gameState$: BehaviorSubject<Record<string,any>> = new BehaviorSubject({});
+    private gameState$: BehaviorSubject<Record<string,any>> = new BehaviorSubject({
+        winner: undefined,
+        board: Game.INITIAL_BOARD_STATE,
+    });
     private sensitiveAreas = [];
-    private board: CellType[][] = Game.INITIAL_BOARD_STATE;
     private currentTurn: CellType = CellType.TAC;
     private winnerDefined = false;
     private objects: EntityAbstract[] = [];
@@ -79,8 +81,8 @@ export class Game {
 
     private update(
         deltaTime: number,
-        keysDown: Record<string, string>,
-        gameState: Record<string,any>,
+        gameState: Record<string, any>,
+        keysDown: Record<string, any>,
         click: Record<string, number>
     ): Record<string,any> {
         this.objects.forEach((object: EntityAbstract) => object.update(deltaTime, keysDown, gameState));
@@ -94,21 +96,21 @@ export class Game {
                     && dx+area.xe > click.x 
                     && dy+area.y < click.y 
                     && dy+area.ye > click.y
-                    && !this.board[area.xC][area.yC]
+                    && !gameState.board[area.xC][area.yC]
                 );
             
             if (foundArea && !this.winnerDefined) {
                 this.shaker.activate();
-                foundArea.trigger(foundArea.link);
+                foundArea.trigger(gameState);
                 this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
             }
             
-            this.winnerDefined = this.isWinner(this.board);
+            this.winnerDefined = this.isWinner(gameState.board);
         }
 
         return !!gameState.winner 
-            ? { winner: undefined }
-            : { winner: this.winnerDefined ? this.currentTurn : undefined };
+            ? { ...gameState, winner: undefined }
+            : { ...gameState, winner: this.winnerDefined ? this.currentTurn : undefined };
     }
 
     private render(): void {
@@ -178,14 +180,14 @@ export class Game {
             xe: xCellAutoArr[xC]+cellSize/2,
             ye: yCellAutoArr[yC]+cellSize/2,
             link: cell,
-            trigger: () => {
-                if (this.board[xC][yC] === null) {
+            trigger: (gameState: Record<string,any>) => {
+                if (gameState.board[xC][yC] === null) {
                     ({
                         [CellType.TAC]: () => this.addTac({x: xCellAutoArr[xC], y: yCellAutoArr[yC]}, cellSize),
                         [CellType.TICK]: () => this.addTick({x: xCellAutoArr[xC], y: yCellAutoArr[yC]}, cellSize),
                     })[this.currentTurn]();
 
-                    this.board[xC][yC] = this.currentTurn;
+                    gameState.board[xC][yC] = this.currentTurn;
                 }
             }
         };
