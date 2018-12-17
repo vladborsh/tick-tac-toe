@@ -255,9 +255,9 @@ export class Game {
     
     private static readonly CELL_COLOR = '4078a0';
 
-    private static readonly TICK_COLOR = '6dcea4';
+    private static readonly TICK_COLOR = '6dcea4d4';
 
-    private static readonly TAC_COLOR = 'b19fea';
+    private static readonly TAC_COLOR = 'b19fead4';
 }
 
 class Shaker {
