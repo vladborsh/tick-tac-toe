@@ -6,12 +6,12 @@ import { EntityAbstract } from './types/entity.abstract';
 import { repeat } from './util';
 import { Vector } from './types/vector.interface';
 import { CellType } from './types/cell-type.enum';
-import { alertIt } from './ui.util';
+import { alertIt, getButton } from './ui.util';
 
 export class Game {
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
-    private gameState$: BehaviorSubject<Record<string,any>> = new BehaviorSubject({
+    private gameState$: BehaviorSubject<Record<string, any>> = new BehaviorSubject({
         winner: undefined,
         board: Game.INITIAL_BOARD_STATE,
     });
@@ -46,9 +46,9 @@ export class Game {
     private initLoop(
         mainStream$: Observable<[
             number,
-            Record<string,string>,
-            Record<string,number>,
-            Record<string,any>
+            Record<string, string>,
+            Record<string, number>,
+            Record<string, any>
         ]>
     ) {
         mainStream$
@@ -61,9 +61,9 @@ export class Game {
                         gameState
                     ]: [
                         number,
-                        Record<string,string>,
+                        Record<string, string>,
                         Record<string, number>,
-                        Record<string,any>
+                        Record<string, any>
                     ]) => this.update(deltaTime, gameState, keysDown, click)
                 ),
                 tap((gameState) => this.gameState$.next(gameState))
@@ -75,7 +75,15 @@ export class Game {
                 filter(state => !!state.winner),
                 map(state => state.winner),
                 distinctUntilChanged(),
-                tap(() => alertIt('We have a winner')),
+                tap(() => {
+                    alertIt('We have a winner', getButton('Reset', () => {
+                        this.objects = this.objects.slice(0,9);
+                        this.gameState$.next({
+                            winner: undefined,
+                            board: Game.INITIAL_BOARD_STATE,
+                        })
+                    }))
+                }),
             ).subscribe();
     }
 

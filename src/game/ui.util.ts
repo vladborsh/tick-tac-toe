@@ -1,6 +1,9 @@
-export function alertIt(text: string) {
+import { Vector } from "./types/vector.interface";
+
+export function alertIt(text: string, ...elements: HTMLElement[]) {
     showModal(modal);
     modalContent.innerText = text;
+    elements.forEach(el => modalContent.appendChild(el));
 }
 
 const modal = getModal();
@@ -61,7 +64,26 @@ function hideModal(element: HTMLDivElement): void {
     });
 }
 
-function applyStyles(element: HTMLDivElement, styles: Record<string,string>): HTMLDivElement {
+export function getButton(text: string, onClick: Function): HTMLElement {
+    const button = document.createElement('button');
+    button.innerText = text;
+    button.addEventListener('click', () => onClick && onClick());
+    return applyStyles(button, {
+        'background-color': '#2c95b57a',
+        'padding': '1rem 2rem',
+        'margin-top': '1rem',
+        'width': '20rem',
+        'border-radius': '0.5rem',
+        'color': '#ffffff',
+        'font-family': 'monospace',
+        'text-align': 'center',
+        'box-shadow': '0 4px 8px 0 #2cc2ef0d, 0 10px 25px 0 #3abde40d',
+        'outline': 'none',
+        'border': 'none',
+    });
+}
+
+function applyStyles<T extends HTMLElement>(element: T, styles: Record<string,string>): T {
     Object.keys(styles).forEach(key => element.style[key] = styles[key]);
 
     return element;
