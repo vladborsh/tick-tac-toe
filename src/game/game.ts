@@ -7,6 +7,8 @@ import { repeat } from './util';
 import { Vector } from './types/vector.interface';
 import { CellType } from './types/cell-type.enum';
 import { alertIt, getButton } from './ui.util';
+import { Shaker } from './shaker';
+import { GameContext } from './game-context';
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -14,10 +16,9 @@ export class Game {
     private gameState$: BehaviorSubject<Record<string, any>> = new BehaviorSubject({
         winner: undefined,
         board: Game.INITIAL_BOARD_STATE,
+        currentTurn: CellType.TAC,
     });
     private sensitiveAreas = [];
-    private currentTurn: CellType = CellType.TAC;
-    private winnerDefined = false;
     private objects: EntityAbstract[] = [];
     private shaker: Shaker = new Shaker();
 
@@ -32,8 +33,8 @@ export class Game {
 
     private init(): void {
         this.canvas = document.createElement('canvas');
-        this.canvas.width = Game.CANVAS_WIDTH;
-        this.canvas.height = Game.CANVAS_HEIGHT;
+        this.canvas.width = GameContext.Config.CANVAS_WIDTH;
+        this.canvas.height = GameContext.Config.CANVAS_HEIGHT;
         document.body.style.background = 'rgb(36, 61, 80)';
         document.body.style.padding = '0';
         document.body.style.margin = '0';
@@ -91,14 +92,21 @@ export class Game {
         deltaTime: number,
         gameState: Record<string, any>,
         keysDown: Record<string, any>,
-        click: Record<string, number>
+        click: Record<string, number>,
     ): Record<string,any> {
-        this.objects.forEach((object: EntityAbstract) => object.update(deltaTime, keysDown, gameState));
-
+        const projectedClick = click && {
+            x: click.x - this.canvas.offsetLeft,
+            y: click.y - this.canvas.offsetTop,
+        };
+        
+        this.objects.forEach((object: EntityAbstract) => object.update(deltaTime, keysDown, click, gameState));
+        
         const dx = this.canvas.offsetLeft;
         const dy = this.canvas.offsetTop;
+
+        let currentTurn = gameState.currentTurn;
         
-        if (click && !this.winnerDefined) {
+        if (click && !gameState.winner) {
             const foundArea = this.sensitiveAreas
                 .find((area) => dx+area.x < click.x 
                     && dx+area.xe > click.x 
@@ -107,18 +115,20 @@ export class Game {
                     && !gameState.board[area.xC][area.yC]
                 );
             
-            if (foundArea && !this.winnerDefined) {
+            if (foundArea && !gameState.winner) {
                 this.shaker.activate();
                 foundArea.trigger(gameState);
-                this.currentTurn = this.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
+                currentTurn = gameState.currentTurn === CellType.TAC ? CellType.TICK : CellType.TAC;
             }
-            
-            this.winnerDefined = this.isWinner(gameState.board);
         }
 
         return !!gameState.winner 
             ? { ...gameState, winner: undefined }
-            : { ...gameState, winner: this.winnerDefined ? this.currentTurn : undefined };
+            : { 
+                ...gameState, 
+                winner: this.isWinner(gameState.board) ? gameState.currentTurn : undefined,
+                currentTurn,
+            };
     }
 
     private render(): void {
@@ -140,11 +150,17 @@ export class Game {
         const [
             xCellAutoArr,
             yCellAutoArr
-        ] = [Game.CANVAS_CENTER_X, Game.CANVAS_CENTER_Y].map(
-            (o: number) => cellsAuto(o, Game.CELL_SIZE, Game.PADDING)
+        ] = [GameContext.Config.CANVAS_CENTER_X, GameContext.Config.CANVAS_CENTER_Y].map(
+            (o: number) => cellsAuto(o, GameContext.Config.CELL_SIZE, GameContext.Config.PADDING)
         );
 
-        repeat(9, (i: number) => this.addCell(i, Game.CELL_SIZE, Game.CELL_COLOR, xCellAutoArr, yCellAutoArr));
+        repeat(9, (i: number) => this.addCell(
+            i, 
+            GameContext.Config.CELL_SIZE, 
+            GameContext.Config.CELL_COLOR, 
+            xCellAutoArr, 
+            yCellAutoArr)
+        );
     }
 
     private addCell(
@@ -193,37 +209,20 @@ export class Game {
                     ({
                         [CellType.TAC]: () => this.addTac({x: xCellAutoArr[xC], y: yCellAutoArr[yC]}, cellSize),
                         [CellType.TICK]: () => this.addTick({x: xCellAutoArr[xC], y: yCellAutoArr[yC]}, cellSize),
-                    })[this.currentTurn]();
+                    })[gameState.currentTurn]();
 
-                    gameState.board[xC][yC] = this.currentTurn;
+                    gameState.board[xC][yC] = gameState.currentTurn;
                 }
             }
         };
     }
 
     private addTac(position: Vector, cellSize: number): void {
-        this.objects.push({
-            render: (ctx: CanvasRenderingContext2D) => Renderer.drawCircle(
-                ctx,
-                position, 
-                cellSize-20,
-                8, 
-                Game.TAC_COLOR,
-            ),
-            update: _ => null,
-        })
+        this.objects.push(new GameContext.TacCell(position, cellSize));
     }
 
     private addTick(position: Vector, cellSize: number): void {
-        this.objects.push({
-            render: (ctx: CanvasRenderingContext2D) => Renderer.drawTick(
-                ctx,
-                position, 
-                cellSize-30,
-                Game.TICK_COLOR,
-            ),
-            update: _ => null,
-        })
+        this.objects.push(new GameContext.TickCell(position, cellSize));
     }
 
     private isWinner(board: CellType[][]): boolean {
@@ -250,62 +249,4 @@ export class Game {
             [null, null, null],
         ];
     }
-
-    private static readonly CANVAS_WIDTH = document.documentElement.clientWidth;
-
-    private static readonly CANVAS_HEIGHT = document.documentElement.clientHeight;
-
-    private static readonly CANVAS_CENTER_X = Game.CANVAS_WIDTH / 2;
-
-    private static readonly CANVAS_CENTER_Y = Game.CANVAS_HEIGHT / 2;
-    
-    private static readonly CELL_SIZE = 50;
-    
-    private static readonly PADDING = 10;
-    
-    private static readonly CELL_COLOR = '4078a0';
-
-    private static readonly TICK_COLOR = '6dcea4d4';
-
-    private static readonly TAC_COLOR = 'b19fead4';
-}
-
-class Shaker {
-    private active = false;
-    private currentTurn = 0;
-    private topDirection: boolean;
-    private iterator: number;
-
-    public isActive(): boolean {
-        return this.active;
-    }
-    
-    public shake(context: CanvasRenderingContext2D): void {
-        if (this.iterator == 2) {
-            this.currentTurn--;
-            this.iterator = 0;
-        } 
-
-        context.translate(0, (this.topDirection ? -1 : 1) * this.currentTurn);
-        this.topDirection = !this.topDirection;
-        
-        this.iterator++;
-
-        if (this.currentTurn == 0) {
-            this.stop();
-        }
-    }
-    
-    public activate(): void {
-        this.active = true;
-        this.topDirection = false;
-        this.currentTurn = Shaker.DEFAULT_TURN_NUMBER;
-        this.iterator = 0;
-    }
-
-    public stop(): void {
-        this.active = false;
-    }
-
-    private static DEFAULT_TURN_NUMBER = 4;
 }

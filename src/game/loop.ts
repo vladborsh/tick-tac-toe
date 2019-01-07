@@ -77,26 +77,6 @@ export class Loop {
     }
 
     /**
-     * This function returns an observable that will emit the next frame once the
-     * browser has returned an animation frame step. Given the previous frame it calculates
-     * the delta time, and we also clamp it to 30FPS in case we get long frames.
-     */
-    private static calculateStep(prevFrame: IFrameData): Observable<IFrameData> {
-        return Observable.create((observer) => {
-            requestAnimationFrame((frameStartTime) => {
-                const deltaTime = prevFrame ? (frameStartTime - prevFrame.frameStartTime)/1000 : 0;
-                observer.next({
-                    frameStartTime,
-                    deltaTime
-                });
-            })
-        })
-        .pipe(
-            map(Loop.clampTo30FPS)
-        )
-    };
-
-    /**
      * This is our core stream of frames. We use expand to recursively call the
      * `calculateStep` function above that will give us each new Frame based on the
      * window.requestAnimationFrame calls. Expand emits the value of the called functions
@@ -115,6 +95,26 @@ export class Loop {
                 share()
             )
     }
+
+    /**
+     * This function returns an observable that will emit the next frame once the
+     * browser has returned an animation frame step. Given the previous frame it calculates
+     * the delta time, and we also clamp it to 30FPS in case we get long frames.
+     */
+    private static calculateStep(prevFrame: IFrameData): Observable<IFrameData> {
+        return Observable.create((observer) => {
+            requestAnimationFrame((frameStartTime) => {
+                const deltaTime = prevFrame ? (frameStartTime - prevFrame.frameStartTime)/1000 : 0;
+                observer.next({
+                    frameStartTime,
+                    deltaTime
+                });
+            })
+        })
+        .pipe(
+            map(Loop.clampTo30FPS)
+        )
+    };
 
     /**
      * clampTo30FPS(frame)
